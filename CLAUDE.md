@@ -10,13 +10,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Build
 ```powershell
+# Development build (version shows as "dev")
 go build -ldflags="-s -w" -o jv.exe .
+
+# Build with version info (required for auto-update to work)
+go build -ldflags="-s -w -X main.Version=v1.0.0" -o jv.exe .
 ```
 
-Build with version info:
-```powershell
-go build -ldflags="-s -w -X main.Version=1.0.0" -o jv.exe .
-```
+**Important:** The version MUST be injected via `-ldflags` for the auto-update feature to work correctly. The GitHub Actions workflow automatically injects the version from git tags.
 
 ### Run
 ```powershell

@@ -77,6 +77,37 @@ The installer script does not require admin; it configures user‑level PATH and
 
 - Issues and feature requests: open an issue on GitHub.
 
+## For Developers
+
+### Building from Source
+
+```powershell
+git clone https://github.com/CostaBrosky/jv.git
+cd jv
+go build -ldflags="-s -w" -o jv.exe .
+```
+
+### Creating a Release
+
+To create a new release with auto-update support:
+
+1. Tag the commit with a version (e.g., `v1.1.0`):
+   ```powershell
+   git tag v1.1.0
+   git push origin v1.1.0
+   ```
+
+2. GitHub Actions will automatically:
+   - Build binaries for Windows (amd64 and arm64)
+   - Inject the version number into the binary
+   - Create ZIP packages
+   - Generate SHA256 checksums
+   - Create a GitHub Release with all assets
+
+3. Users can then update via `jv update` command
+
+**Note:** The version is automatically injected via `-ldflags` during the GitHub Actions build. Local builds will show version as "dev" unless you manually specify the version.
+
 ## Changelog
 
 - See `CHANGELOG.md` for release notes.
