@@ -156,59 +156,43 @@ func IsAdmin() bool {
 	return member
 }
 
-// RefreshCurrentSession updates environment variables in the current PowerShell session
-// This allows users to use 'java -version' immediately without reopening the terminal
-func RefreshCurrentSession() error {
-	// Get the updated JAVA_HOME from registry
+// GetRefreshCommand returns a PowerShell command to refresh environment in the current session
+// This must be executed by the PowerShell session itself, not from within jv.exe
+func GetRefreshCommand() string {
 	javaHome, err := GetJavaHome()
 	if err != nil {
-		return fmt.Errorf("failed to get JAVA_HOME: %w", err)
+		return ""
 	}
 
-	// Get the updated PATH from registry
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, systemEnvRegPath, registry.QUERY_VALUE)
-	if err != nil {
-		return fmt.Errorf("failed to open registry key: %w", err)
-	}
-	defer key.Close()
-
-	systemPath, _, err := key.GetStringValue("Path")
-	if err != nil {
-		return fmt.Errorf("failed to read PATH: %w", err)
-	}
-
-	// Expand %JAVA_HOME% in PATH
-	expandedPath := strings.ReplaceAll(systemPath, "%JAVA_HOME%", javaHome)
-
-	// Update current process environment
-	os.Setenv("JAVA_HOME", javaHome)
-
-	// Get current user PATH and prepend system PATH
-	userPath := os.Getenv("PATH")
-
-	// Check if user PATH already contains the new Java path to avoid duplication
-	javaBin := filepath.Join(javaHome, "bin")
-	if !strings.Contains(strings.ToLower(userPath), strings.ToLower(javaBin)) {
-		// Prepend new Java bin to PATH
-		newPath := javaBin + ";" + userPath
-		os.Setenv("PATH", newPath)
-	} else {
-		// Update existing PATH with expanded system PATH
-		os.Setenv("PATH", expandedPath+";"+userPath)
-	}
-
-	return nil
+	// Generate PowerShell command that updates the session's environment
+	// This removes old Java paths and adds the new one at the front
+	return fmt.Sprintf(`$env:JAVA_HOME = '%s'; $env:Path = ($env:Path -split ';' | Where-Object { $_ -notmatch '\\bin' -or $_ -notmatch 'java|jdk|jre' }) -join ';'; $env:Path = '%s\bin;' + $env:Path`,
+		javaHome, javaHome)
 }
 
-// GetRefreshCommand returns a PowerShell command to refresh environment in the current session
-// Users can run this command to update their current terminal without reopening it
-func GetRefreshCommand() string {
-	return `$env:JAVA_HOME = [System.Environment]::GetEnvironmentVariable('JAVA_HOME','Machine'); $env:Path = [System.Environment]::GetEnvironmentVariable('JAVA_HOME','Machine') + '\bin;' + $env:Path`
+// GetSimpleRefreshCommand returns a simpler PowerShell command that just prepends the new Java
+func GetSimpleRefreshCommand() string {
+	javaHome, err := GetJavaHome()
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf(`$env:JAVA_HOME = '%s'; $env:Path = '%s\bin;' + $env:Path`, javaHome, javaHome)
 }
 
-// PrintRefreshInstructions prints instructions for refreshing the current session
+// PrintRefreshInstructions prints the PowerShell command needed to refresh the current session
 func PrintRefreshInstructions() {
-	fmt.Println("\nTo apply changes in your current terminal session, run:")
-	fmt.Println("  " + GetRefreshCommand())
-	fmt.Println("\nOr simply close and reopen your terminal.")
+	cmd := GetSimpleRefreshCommand()
+	if cmd == "" {
+		fmt.Println("\nFailed to generate refresh command. Please restart your terminal.")
+		return
+	}
+
+	fmt.Println("\n" + strings.Repeat("─", 80))
+	fmt.Println("To use the new Java version in this terminal, run:")
+	fmt.Println()
+	fmt.Println("  " + cmd)
+	fmt.Println()
+	fmt.Println(strings.Repeat("─", 80))
+	fmt.Println("\nOr simply open a new terminal window.")
 }
