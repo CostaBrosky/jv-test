@@ -2,6 +2,7 @@ package env
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -153,4 +154,61 @@ func IsAdmin() bool {
 	}
 
 	return member
+}
+
+// RefreshCurrentSession updates environment variables in the current PowerShell session
+// This allows users to use 'java -version' immediately without reopening the terminal
+func RefreshCurrentSession() error {
+	// Get the updated JAVA_HOME from registry
+	javaHome, err := GetJavaHome()
+	if err != nil {
+		return fmt.Errorf("failed to get JAVA_HOME: %w", err)
+	}
+
+	// Get the updated PATH from registry
+	key, err := registry.OpenKey(registry.LOCAL_MACHINE, systemEnvRegPath, registry.QUERY_VALUE)
+	if err != nil {
+		return fmt.Errorf("failed to open registry key: %w", err)
+	}
+	defer key.Close()
+
+	systemPath, _, err := key.GetStringValue("Path")
+	if err != nil {
+		return fmt.Errorf("failed to read PATH: %w", err)
+	}
+
+	// Expand %JAVA_HOME% in PATH
+	expandedPath := strings.ReplaceAll(systemPath, "%JAVA_HOME%", javaHome)
+
+	// Update current process environment
+	os.Setenv("JAVA_HOME", javaHome)
+
+	// Get current user PATH and prepend system PATH
+	userPath := os.Getenv("PATH")
+
+	// Check if user PATH already contains the new Java path to avoid duplication
+	javaBin := filepath.Join(javaHome, "bin")
+	if !strings.Contains(strings.ToLower(userPath), strings.ToLower(javaBin)) {
+		// Prepend new Java bin to PATH
+		newPath := javaBin + ";" + userPath
+		os.Setenv("PATH", newPath)
+	} else {
+		// Update existing PATH with expanded system PATH
+		os.Setenv("PATH", expandedPath+";"+userPath)
+	}
+
+	return nil
+}
+
+// GetRefreshCommand returns a PowerShell command to refresh environment in the current session
+// Users can run this command to update their current terminal without reopening it
+func GetRefreshCommand() string {
+	return `$env:JAVA_HOME = [System.Environment]::GetEnvironmentVariable('JAVA_HOME','Machine'); $env:Path = [System.Environment]::GetEnvironmentVariable('JAVA_HOME','Machine') + '\bin;' + $env:Path`
+}
+
+// PrintRefreshInstructions prints instructions for refreshing the current session
+func PrintRefreshInstructions() {
+	fmt.Println("\nTo apply changes in your current terminal session, run:")
+	fmt.Println("  " + GetRefreshCommand())
+	fmt.Println("\nOr simply close and reopen your terminal.")
 }

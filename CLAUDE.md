@@ -63,6 +63,7 @@ go mod download      # Download dependencies
    - Sets `JAVA_HOME` in `HKLM\System\CurrentControlSet\Control\Session Manager\Environment`
    - Manages PATH: removes old Java entries, prepends `%JAVA_HOME%\bin`
    - Broadcasts `WM_SETTINGCHANGE` to notify applications
+   - **`RefreshCurrentSession()`**: Updates env vars in current process so `java -version` works immediately
    - Requires Administrator privileges
 
 5. **internal/installer/** - Interactive Java installation
@@ -93,6 +94,7 @@ go mod download      # Download dependencies
 - **Registry as Source of Truth**: `env.GetJavaHome()` reads from Registry, not process environment
 - **Interactive Confirmations**: Critical operations (switch, install, remove) require confirmation prompts
 - **Spinner UIs**: Long operations (scanning, downloading) show progress spinners
+- **Session Refresh**: After switching Java versions, env vars are refreshed in current process (no terminal restart needed)
 
 ### File Organization
 

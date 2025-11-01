@@ -253,9 +253,18 @@ func handleUse() {
 		os.Exit(1)
 	}
 
+	// Refresh environment variables in current session
+	if err := env.RefreshCurrentSession(); err != nil {
+		// Non-fatal, just warn
+		fmt.Println(warningStyle.Render(fmt.Sprintf("Warning: Could not refresh current session: %v", err)))
+	}
+
 	fmt.Println(successStyle.Render("✓ Successfully updated JAVA_HOME!"))
 	fmt.Println()
-	fmt.Println(lipgloss.NewStyle().Faint(true).Render("Note: You may need to restart your terminal or applications for changes to take effect."))
+	fmt.Println(theme.SuccessStyle.Render("Environment variables refreshed in current session."))
+	fmt.Println(theme.InfoStyle.Render("You can now run 'java -version' to verify the change."))
+	fmt.Println()
+	fmt.Println(lipgloss.NewStyle().Faint(true).Render("Note: Other terminal windows will need to be restarted to see changes."))
 }
 
 func handleCurrent() {
@@ -723,9 +732,18 @@ func handleSwitch() {
 		os.Exit(1)
 	}
 
+	// Refresh environment variables in current session
+	if err := env.RefreshCurrentSession(); err != nil {
+		// Non-fatal, just warn
+		fmt.Println(warningStyle.Render(fmt.Sprintf("Warning: Could not refresh current session: %v", err)))
+	}
+
 	fmt.Println(successStyle.Render("✓ Successfully updated JAVA_HOME!"))
 	fmt.Println()
-	fmt.Println(lipgloss.NewStyle().Faint(true).Render("Note: You may need to restart your terminal or applications for changes to take effect."))
+	fmt.Println(theme.SuccessStyle.Render("Environment variables refreshed in current session."))
+	fmt.Println(theme.InfoStyle.Render("You can now run 'java -version' to verify the change."))
+	fmt.Println()
+	fmt.Println(lipgloss.NewStyle().Faint(true).Render("Note: Other terminal windows will need to be restarted to see changes."))
 }
 
 func handleDoctor() {
