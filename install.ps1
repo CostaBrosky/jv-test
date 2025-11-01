@@ -490,6 +490,33 @@ Register-ArgumentCompleter -Native -CommandName jv -ScriptBlock {
     }
 }
 # jv completion - end
+
+# jv auto-refresh wrapper - begin
+# This function wraps 'jv' to automatically refresh environment after 'use' or 'switch'
+# Save the original jv.exe location
+$jvExe = (Get-Command jv.exe -ErrorAction SilentlyContinue).Source
+if (-not $jvExe) { $jvExe = 'jv.exe' }
+
+function jv {
+    # Call the real jv.exe
+    & $jvExe $args
+    $exitCode = $LASTEXITCODE
+
+    # If command was 'use' or 'switch' and succeeded, refresh environment
+    if ($exitCode -eq 0 -and ($args.Count -gt 0) -and ($args[0] -eq 'use' -or $args[0] -eq 'switch')) {
+        $newJavaHome = [System.Environment]::GetEnvironmentVariable('JAVA_HOME','Machine')
+        if ($newJavaHome) {
+            $env:JAVA_HOME = $newJavaHome
+            # Add new Java bin to front of PATH
+            $env:Path = "$newJavaHome\bin;" + $env:Path
+            Write-Host "`n✓ Environment refreshed! You can now run 'java -version'" -ForegroundColor Green
+        }
+    }
+
+    # Preserve exit code
+    $global:LASTEXITCODE = $exitCode
+}
+# jv auto-refresh wrapper - end
 '@
 
         # Append completion script to profile
@@ -587,14 +614,21 @@ try {
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
     Write-Host "  1. Restart your terminal to reload environment variables"
-    
+
     if ($completionInstalled) {
-        Write-Host "     (This will also enable autocomplete - try: jv <tab>)" -ForegroundColor Gray
+        Write-Host "     (This will also enable autocomplete and helper functions)" -ForegroundColor Gray
     } else {
         Write-Host "     (or run: `$env:Path = [System.Environment]::GetEnvironmentVariable('Path','User'))"
     }
-    
+
     Write-Host "  2. Run: jv list          (see detected Java installations)"
+
+    if ($completionInstalled) {
+        Write-Host ""
+        Write-Host "  💡 NEW: Auto-refresh wrapper installed!" -ForegroundColor Green
+        Write-Host "     After restarting terminal, 'jv use' and 'jv switch' will automatically" -ForegroundColor Gray
+        Write-Host "     refresh your session - no need for terminal restart!" -ForegroundColor Gray
+    }
     
     if ($completionInstalled) {
         Write-Host "  3. Try autocomplete: jv <tab>" -ForegroundColor Green

@@ -2,7 +2,6 @@ package env
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -188,11 +187,42 @@ func PrintRefreshInstructions() {
 		return
 	}
 
-	fmt.Println("\n" + strings.Repeat("─", 80))
-	fmt.Println("To use the new Java version in this terminal, run:")
+	fmt.Println()
+	fmt.Println(strings.Repeat("━", 80))
+	fmt.Println("⚡ To use the new Java version in THIS terminal, run:")
 	fmt.Println()
 	fmt.Println("  " + cmd)
 	fmt.Println()
-	fmt.Println(strings.Repeat("─", 80))
-	fmt.Println("\nOr simply open a new terminal window.")
+	fmt.Println(strings.Repeat("━", 80))
+	fmt.Println()
+	fmt.Println("💡 TIP: Install the auto-refresh wrapper to avoid this step!")
+	fmt.Println("   The installer (install.ps1) adds a PowerShell function that")
+	fmt.Println("   automatically refreshes your session after 'jv use' or 'jv switch'.")
+	fmt.Println()
+	fmt.Println("   Or add this to your $PROFILE manually:")
+	fmt.Println()
+	printWrapperFunction()
+	fmt.Println()
+}
+
+// printWrapperFunction outputs the PowerShell wrapper function
+func printWrapperFunction() {
+	wrapper := `   $jvExe = (Get-Command jv.exe -ErrorAction SilentlyContinue).Source
+   if (-not $jvExe) { $jvExe = 'jv.exe' }
+
+   function jv {
+       & $jvExe $args
+       $exitCode = $LASTEXITCODE
+       if ($exitCode -eq 0 -and ($args.Count -gt 0) -and ($args[0] -eq 'use' -or $args[0] -eq 'switch')) {
+           $env:JAVA_HOME = [System.Environment]::GetEnvironmentVariable('JAVA_HOME','Machine')
+           if ($env:JAVA_HOME) { $env:Path = "$env:JAVA_HOME\bin;" + $env:Path }
+       }
+       $global:LASTEXITCODE = $exitCode
+   }`
+	fmt.Println(wrapper)
+}
+
+// GetRefreshTemplate returns the template for PowerShell refresh
+func GetRefreshTemplate() string {
+	return `$env:JAVA_HOME=[System.Environment]::GetEnvironmentVariable('JAVA_HOME','Machine'); $env:Path=$env:JAVA_HOME+'\bin;'+$env:Path`
 }
