@@ -2,7 +2,7 @@ name: Build & Release (Go)
 
 on:
   push:
-    branches: [ main ]
+    # branches: [ main ] # commentato per testare il workflow senza branches
     tags: [ 'v*' ]        # crea una release quando pushi un tag tipo v1.2.3
   pull_request:
     branches: [ main ]

@@ -14,7 +14,7 @@ import (
 
 const (
 	// GitHubRepo is the repository for jv releases
-	GitHubRepo = "CostaBrosky/jv"
+	GitHubRepo = "CostaBrosky/jv-test"
 
 	// CheckInterval is minimum time between update checks
 	CheckInterval = 24 * time.Hour
