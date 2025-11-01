@@ -47,7 +47,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Constants
-$GITHUB_REPO = "CostaBrosky/jv"
+$GITHUB_REPO = "CostaBrosky/jv-test"
 
 # Colors for output
 function Write-Info($message) {
